@@ -8,3 +8,5 @@ stiripesurse - newsplease + bs (nu extragea textul automat)
 dcnews - newsplease + bs (nu extragea textul automat)
 
 evz - news-please
+
+puterea.ro - news-please
