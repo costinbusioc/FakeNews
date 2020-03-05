@@ -5,3 +5,6 @@ https://adevarul.ro/news/politica/ - beautifulsoup
 
 stiripesurse - newsplease + bs (nu extragea textul automat)
 
+dcnews - newsplease + bs (nu extragea textul automat)
+
+evz - news-please
