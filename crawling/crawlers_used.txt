@@ -1,0 +1,5 @@
+https://www.libertatea.ro/stiri-externe - news-please
+https://www.libertatea.ro/politica - news-please
+
+"https://adevarul.ro/news/politica/" - beautifulsoup
+
