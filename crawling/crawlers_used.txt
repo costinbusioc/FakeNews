@@ -27,3 +27,5 @@ digi24 - bs
 
 agerpres - bs
 
+informateca - bs
+
