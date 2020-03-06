@@ -15,3 +15,5 @@ notabn - news-please
 
 gandul.info - news-please
 
+news.ro - news-please
+
