@@ -13,4 +13,5 @@ puterea.ro - news-please
 
 notabn - news-please
 
+gandul.info - news-please
 
