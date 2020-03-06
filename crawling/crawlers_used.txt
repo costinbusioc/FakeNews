@@ -23,3 +23,5 @@ zf - news-please
 
 ziare.com - news-please
 
+digi24 - bs
+
