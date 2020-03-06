@@ -29,3 +29,5 @@ agerpres - bs
 
 informateca - bs
 
+mediafax - bs
+
