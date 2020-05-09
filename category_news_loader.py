@@ -21,7 +21,7 @@ class DatasetLoader:
         self.input_file = "category_news.csv"
         self.output_file = args.out_file
 
-        w2v_needed = args.clust_alg == "birch" or args.clust_alg == "dbscan"
+        w2v_needed = not args.vector_repr == "bert"
         self.clusterizer = docclustering.DocClustering(w2v_needed=w2v_needed)
 
     def load_data(self):
@@ -301,8 +301,8 @@ if __name__ == "__main__":
         dest="vector_repr",
         action="store",
         type=str,
-        default="w2v_titles",
-        choices=["w2v_titles", "w2v_texts", "w2v_titles_texts"],
+        default="bert",
+        choices=["w2v_titles", "w2v_texts", "w2v_titles_texts", "bert"],
         help="Vector text represenation for birch",
     )
     parser.add_argument(

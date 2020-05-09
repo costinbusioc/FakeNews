@@ -7,16 +7,16 @@ from scipy.spatial.distance import cdist
 
 from gensim.models.keyedvectors import KeyedVectors
 
-sys.path.insert(0, "readerbenchpy")
+from rb.core.lang import Lang
 from rb.parser.spacy_parser import SpacyParser
-from rb.core import lang
-
+#from rb.processings.encoders.bert import BertWrapper
+from tensorflow import keras
 
 class DocClustering:
     MAX_NB_WORDS = 1000000
     ENGLISH = "en"
 
-    nlp_ro = SpacyParser.get_instance().get_model(lang.Lang.RO)
+    nlp_ro = SpacyParser.get_instance().get_model(Lang.RO)
 
     word_embeddings_model = "word2vec.model"
     embeddings_dim = 300
@@ -196,6 +196,13 @@ class DocClustering:
             vector_titles = self.compute_w2v_avg(titles)
             vector_texts = self.compute_w2v_avg(texts)
             return [sum(e) / len(e) for e in zip([vector_titles, vector_texts])]
+        elif vector_repr == "bert":
+            input_pairs = [x for x in zip([titles, texts])]
+            model = keras.models.load_model("models/bert-cls-256")
+            bert = BertWrapper(Lang.RO, max_seq_len=128)
+            input_feed = bert.process_input(input_pairs)
+            predictions = model.predict(input_feed, batch_size=32)
+            print(predictions)
 
     def clusterize_birch(self, titles, texts, vector_repr):
         processed_titles, processed_texts = self.process_title_text(titles, texts)
