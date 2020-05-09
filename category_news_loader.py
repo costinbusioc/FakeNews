@@ -21,7 +21,7 @@ sources_dict = {}
 from collections import Counter
 
 # different doc classifiers, lstm, naive bayes, svm
-class DocClassifiers:
+class DatasetLoader:
     input_file = "category_news.csv"
     output_file = 'results.txt'
     nouns_file = 'non_freq_nouns.txt'
@@ -87,28 +87,7 @@ class DocClassifiers:
     
         
     
-    def all_cosine_matrix(self, processed_texts, processed_titles):
-        global args
-        
-        titles_w2v_sum = doc_classifier.computer_word2vec_avg(processed_titles)
-        sim_matrix_titles = doc_classifier.cosine_matrix(titles_w2v_sum)
-        
-        text_w2v_sum = doc_classifier.computer_word2vec_avg(processed_texts)
-        sim_matrix_text = doc_classifier.cosine_matrix(text_w2v_sum)
 
-        sim_matrix = sim_matrix_titles
-        for i in range(len(sim_matrix)):
-            for j in range(len(sim_matrix[i])):
-                sim_matrix[i][j] += sim_matrix_text[i][j]
-                sim_matrix[i][j] /= 2
-
-        for i in range(len(sim_matrix)):
-            sim_matrix[i][i] += args.diag_val
-
-        print('Similarity matrix computed')
-        return sim_matrix
-
-    
     def compute_similarity_matrix(self, texts, titles):
         global args
         
@@ -230,9 +209,9 @@ if __name__ == "__main__":
         if args.__dict__[k] is not None:
             print(k, '->', args.__dict__[k])
 
-    doc_classifier = DocClassifiers()
-    all_titles, all_texts = doc_classifier.load_data()
+    dataset_loader = DatasetLoader()
+    all_titles, all_texts = dataset_loader.load_data()
     
-    #sim_matrix = doc_classifier.compute_similarity_matrix(all_texts, all_titles)
+    #sim_matrix = dataset_loader.compute_similarity_matrix(all_texts, all_titles)
 
-    #doc_classifier.cluster_articles(sim_matrix)
+    #dataset_loader.cluster_articles(sim_matrix)

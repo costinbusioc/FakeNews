@@ -11,6 +11,7 @@ sys.path.insert(0, "readerbenchpy")
 from rb.parser.spacy_parser import SpacyParser
 from rb.core import lang
 
+
 class DocClustering:
     MAX_NB_WORDS = 1000000
     ENGLISH = "en"
@@ -112,9 +113,7 @@ class DocClustering:
     def jaccard_matrix(self, titles, texts, diag_val=0):
         processed_nouns = []
         for i in range(len(titles)):
-            processed_nouns.append(
-                set(titles[i]).union(set(texts[i]))
-            )
+            processed_nouns.append(set(titles[i]).union(set(texts[i])))
 
         sim_matrix = [[0] * len(titles) for i in range(len(titles))]
 
@@ -131,10 +130,6 @@ class DocClustering:
                     else:
                         sim_matrix[i][j] = sim_matrix[j][i] = len(inter) / len(union)
 
-        for i in range(len(sim_matrix)):
-            sim_matrix[i][i] += diag_val
-
-        print("Similarity matrix computed")
         return sim_matrix
 
     def title_cosine_matrix(self, titles, texts, diag_val=0):
@@ -150,24 +145,43 @@ class DocClustering:
                 ):
                     sim_matrix[i][j] = 0
 
-        for i in range(len(sim_matrix)):
-            sim_matrix[i][i] += diag_val
-
-        print("Similarity matrix computed")
         return sim_matrix
 
-    def compute_similarity_matrix(self, titles, texts, sim="jaccard"):
+    def all_cosine_matrix(self, titles, texts, diag_val=0):
+        titles_w2v_sum = self.compute_w2v_avg(titles)
+        sim_matrix_titles = cdist(titles_w2v_sum, titles_w2v_sum, metric="cosine")
+
+        texts_w2v_sum = self.compute_w2v_avg(texts)
+        sim_matrix_texts = cdist(texts_w2v_sum, texts_w2v_sum, metric="cosine")
+
+        sim_matrix = sim_matrix_titles
+        for i in range(len(sim_matrix)):
+            for j in range(len(sim_matrix[i])):
+                sim_matrix[i][j] += sim_matrix_texts[i][j]
+                sim_matrix[i][j] /= 2
+
+        return sim_matrix
+
+    def compute_similarity_matrix(self, titles, texts, sim, diag_val):
         if sim == "jaccard":
             sim_matrix = self.jaccard_matrix(titles, texts)
         elif sim == "title_cosine":
             sim_matrix = self.title_cosine_matrix(titles, texts)
-        print('Sim matrix computed')
+        elif sim == "all_cosine":
+            return self.all_cosine_matrix(titles, texts)
+
+        for i in range(len(sim_matrix)):
+            sim_matrix[i][i] += diag_val
+        print("Sim matrix computed")
+
         return sim_matrix
 
-    def clusterize_affinity_propagation(self, titles, texts, sim="jaccard"):
+    def clusterize_affinity_propagation(self, titles, texts, sim="jaccard", diag_val=0):
         processed_titles, processed_texts = self.process_title_text(titles, texts)
 
-        sim_matrix = self.compute_similarity_matrix(processed_titles, processed_texts, sim)
+        sim_matrix = self.compute_similarity_matrix(
+            processed_titles, processed_texts, sim, diag_val
+        )
         af_prop = AffinityPropagation(affinity="precomputed")
         af = af_prop.fit(sim_matrix)
         print("Afinity done")
