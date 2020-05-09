@@ -205,6 +205,9 @@ class DocClustering:
         )
         brc = Birch().fit(vector_representation)
         predictions = brc.predict(vector_representation)
+        print(brc.labels_)
+        print(brc.subcluster_centers_)
+        print(brc.subcluster_labels_)
 
         return predictions
 

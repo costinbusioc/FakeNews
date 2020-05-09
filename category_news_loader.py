@@ -14,13 +14,14 @@ from collections import Counter
 
 
 class DatasetLoader:
-    input_file = "category_news.csv"
-    output_file = "results.txt"
     nouns_file = "non_freq_nouns.txt"
 
     def __init__(self):
         global args
-        w2v_needed = args.clust_alg == "birch"
+        self.input_file = "category_news.csv"
+        self.output_file = args.out_file
+
+        w2v_needed = args.clust_alg == "birch" or args.clust_dict == "dbscan"
         self.clusterizer = docclustering.DocClustering(w2v_needed=w2v_needed)
 
     def load_data(self):
@@ -32,9 +33,7 @@ class DatasetLoader:
         texts, titles, categories = [], [], []
         cnt_skipped_examples = 0
 
-        input_csv = self.input_file
-
-        with io.open(input_csv, "r", encoding="utf-8", errors="replace") as csv_file:
+        with io.open(self.input_file, "r", encoding="utf-8", errors="replace") as csv_file:
             index = 0
             csv_reader = csv.reader(csv_file, delimiter=",")
 
@@ -77,8 +76,6 @@ class DatasetLoader:
         return titles, texts
 
     def write_affinity_results(self, af, sim):
-        global args
-
         result = {}
 
         labels = af.labels_
@@ -123,8 +120,7 @@ class DatasetLoader:
                 for l2 in range(len(indices)):
                     similarities[l1][l2] = sim[indices[l1]][indices[l2]]
 
-            cluster_data = {
-                "idx": i,
+            result[i] = {
                 "center": self.titles[cluster_centers[i]],
                 "members": cluster_titles,
                 "len": len(cluster_titles),
@@ -134,12 +130,10 @@ class DatasetLoader:
                 "farest": farest[i],
             }
 
-            result[i] = cluster_data
-
         # with open('json_format.json', 'w') as fp:
         # json.dump(result, fp, indent=4)
 
-        with io.open(args.out_file, "w", encoding="utf-8") as outputfile:
+        with io.open(self.output_file, "w", encoding="utf-8") as outputfile:
             for i in result:
                 outputfile.write(str(i) + ":\n")
                 outputfile.write(" " * 4 + "len: " + str(result[i]["len"]) + "\n")
@@ -172,6 +166,91 @@ class DatasetLoader:
             # pp.pprint(result)
             # json.dump(result, outputfile, indent='\t')
 
+    def write_birch_results(self, labels):
+        result = {}
+        unique_labels = set(labels)
+
+        for l in unique_labels:
+            indices = []
+
+            for i, label in enumerate(labels):
+                if label == l:
+                    indices.append(i)
+
+            cluster_titles = list(map(self.titles.__getitem__, indices))
+            cluster_categories = list(map(self.categories.__getitem__, indices))
+
+            result[l] = {
+                "members": cluster_titles,
+                "len": len(cluster_titles),
+                "categories": cluster_categories,
+            }
+
+        # with open('json_format.json', 'w') as fp:
+        # json.dump(result, fp, indent=4)
+
+        with io.open(self.output_file, "w", encoding="utf-8") as outputfile:
+            for i in result:
+                outputfile.write(str(i) + ":\n")
+                outputfile.write(" " * 4 + "len: " + str(result[i]["len"]) + "\n")
+                outputfile.write(" " * 4 + "members: " + "\n")
+                for j in range(len(result[i]["members"])):
+                    outputfile.write(
+                        " " * 8
+                        + "- "
+                        + str(result[i]["categories"][j])
+                        + ": "
+                        + str(result[i]["members"][j])
+                        + "\n"
+                    )
+                outputfile.write("\n\n")
+            # pp = pprint.PrettyPrinter(indent=4, stream=outputfile, depth=4, width=200)
+            # pp.pprint(result)
+            # json.dump(result, outputfile, indent='\t')
+
+    def write_dbscan_results(self, labels):
+        result = {}
+        unique_labels = set(labels)
+
+        for l in unique_labels:
+            indices = []
+
+            for i, label in enumerate(labels):
+                if label == l:
+                    indices.append(i)
+
+            cluster_titles = list(map(self.titles.__getitem__, indices))
+            cluster_categories = list(map(self.categories.__getitem__, indices))
+
+            result[l] = {
+                "members": cluster_titles,
+                "len": len(cluster_titles),
+                "categories": cluster_categories,
+            }
+
+        # with open('json_format.json', 'w') as fp:
+        # json.dump(result, fp, indent=4)
+
+        with io.open(self.output_file, "w", encoding="utf-8") as outputfile:
+            for i in result:
+                outputfile.write(str(i) + ":\n")
+                outputfile.write(" " * 4 + "len: " + str(result[i]["len"]) + "\n")
+                outputfile.write(" " * 4 + "members: " + "\n")
+                for j in range(len(result[i]["members"])):
+                    outputfile.write(
+                        " " * 8
+                        + "- "
+                        + str(result[i]["categories"][j])
+                        + ": "
+                        + str(result[i]["members"][j])
+                        + "\n"
+                    )
+                outputfile.write("\n\n")
+            # pp = pprint.PrettyPrinter(indent=4, stream=outputfile, depth=4, width=200)
+            # pp.pprint(result)
+            # json.dump(result, outputfile, indent='\t')
+
+
     def cluster_dataset(self):
         global args
         titles, texts = dataset_loader.load_data()
@@ -185,12 +264,12 @@ class DatasetLoader:
             predictions = self.clusterizer.clusterize_birch(
                 titles, texts, args.vector_repr
             )
-            print(predictions)
+            self.write_birch_results(predictions)
         elif args.clust_alg == "dbscan":
             predictions = self.clusterizer.clusterize_dbscan(
                 titles, texts, args.vector_repr
             )
-            print(predictions)
+            self.write_dbscan_results(predictions)
 
 
 if __name__ == "__main__":
