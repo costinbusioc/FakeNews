@@ -1,44 +1,29 @@
 import pprint
 import io
-import numpy as np
 import csv
-import sys
 import json
 import heapq
-
-from functools import reduce
-from operator import itemgetter 
-
-sys.path.insert(0, "rbpy")
-
-from rb.parser.spacy_parser import SpacyParser
-from rb.core import lang
+import docclustering
 
 import argparse
+
 args = None
 sources_dict = {}
 
 from collections import Counter
 
-# different doc classifiers, lstm, naive bayes, svm
 class DatasetLoader:
     input_file = "category_news.csv"
-    output_file = 'results.txt'
-    nouns_file = 'non_freq_nouns.txt'
-
-    nlp_ro = SpacyParser.get_instance().get_model(lang.Lang.RO)
-    
-    word_embeddings_model = '../word2vec.model'
-    embeddings_dim = 300
+    output_file = "results.txt"
+    nouns_file = "non_freq_nouns.txt"
 
     def __init__(self):
-        global args
-        pass        
+        self.clusterizer = docclustering.DocClustering()
 
     def load_data(self):
         global args
         global sources_dict
-        
+
         csv.field_size_limit(10000000)
 
         texts, titles, categories = [], [], []
@@ -46,9 +31,9 @@ class DatasetLoader:
 
         input_csv = self.input_file
 
-        with io.open(input_csv, 'r', encoding='utf-8', errors='replace') as csv_file:
+        with io.open(input_csv, "r", encoding="utf-8", errors="replace") as csv_file:
             index = 0
-            csv_reader = csv.reader(csv_file, delimiter = ',')
+            csv_reader = csv.reader(csv_file, delimiter=",")
 
             for line in csv_reader:
                 index += 1
@@ -61,15 +46,19 @@ class DatasetLoader:
                     except:
                         cnt_skipped_examples += 1
                         continue
-                    
+
                     category = line[3]
 
                     titles.append(title)
                     texts.append(text)
                     categories.append(category)
 
-            print('dataset loaded, skipped examples {} from total of {}, remaining {}'.format(cnt_skipped_examples, index, len(categories)))
-            print('labels distribution, all: ')
+            print(
+                "dataset loaded, skipped examples {} from total of {}, remaining {}".format(
+                    cnt_skipped_examples, index, len(categories)
+                )
+            )
+            print("labels distribution, all: ")
             counters_categories = Counter(categories)
             print(counters_categories)
 
@@ -81,46 +70,28 @@ class DatasetLoader:
         self.categories = categories
         self.titles = titles
         self.texts = texts
-        
+
         return titles, texts
-    
-    
-        
-    
 
-    def compute_similarity_matrix(self, texts, titles):
-        global args
-        
-        processed_titles = self.preprocess_text(titles)
-        print('Titles processed')
-        processed_texts = self.preprocess_text(texts)
-        print('Texts processed')
-
-        if args.jaccard:
-            return self.jaccard_matrix(processed_texts, processed_titles)
-        elif args.title_cosine:
-            return self.title_cosine_matrix(processed_texts, processed_titles)
-        elif args.all_cosine:
-            return self.all_cosine_matrix(processed_texts, processed_titles)
-        
-
-    def write_results(self, af, sim):
+    def write_affinity_results(self, af, sim):
         global args
 
         result = {}
-        
+
         labels = af.labels_
         cluster_centers = af.cluster_centers_indices_
-        
+
         dist_clusters = []
         for i in range(len(cluster_centers)):
             diff = []
             for j in range(len(cluster_centers)):
                 if i != j:
-                    heapq.heappush(diff, (sim[cluster_centers[i]][cluster_centers[j]], j))
+                    heapq.heappush(
+                        diff, (sim[cluster_centers[i]][cluster_centers[j]], j)
+                    )
             dist_clusters.append(diff)
 
-        closest = [] 
+        closest = []
         farest = []
         for i in range(len(cluster_centers)):
             closest.append([])
@@ -136,11 +107,11 @@ class DatasetLoader:
         for i in range(len(cluster_centers)):
 
             indices = []
-            
+
             for j, label in enumerate(labels):
                 if label == i:
                     indices.append(j)
-                    
+
             cluster_titles = list(map(self.titles.__getitem__, indices))
             cluster_categories = list(map(self.categories.__getitem__, indices))
 
@@ -150,68 +121,115 @@ class DatasetLoader:
                     similarities[l1][l2] = sim[indices[l1]][indices[l2]]
 
             cluster_data = {
-                'idx': i,
-                'center': self.titles[cluster_centers[i]],
-                'members': cluster_titles,
-                'len': len(cluster_titles),
-                'categories': cluster_categories,
-                'distances': similarities,
-                'closest': closest[i],
-                'farest': farest[i]
+                "idx": i,
+                "center": self.titles[cluster_centers[i]],
+                "members": cluster_titles,
+                "len": len(cluster_titles),
+                "categories": cluster_categories,
+                "distances": similarities,
+                "closest": closest[i],
+                "farest": farest[i],
             }
-            
-            result[i] = cluster_data
-        
-        #with open('json_format.json', 'w') as fp:
-            #json.dump(result, fp, indent=4)
-            
-        with io.open(args.out_file, 'w', encoding='utf-8') as outputfile:
-            for i in result:
-                outputfile.write(str(i) + ':\n')
-                outputfile.write(' ' * 4 + 'len: ' + str(result[i]['len']) + '\n')
-                outputfile.write(' ' * 4 + 'center: ' + result[i]['center'] + '\n')
-                outputfile.write(' ' * 4 + 'members: ' + '\n')
-                for j in range(len(result[i]['members'])):
-                    outputfile.write(' ' * 8 + '- ' + str(result[i]['categories'][j]) + ': ' + str(result[i]['members'][j]) + '\n')
-                #outputfile.write(' ' * 4 + 'distances: ' + '\n')
-                #for distance in result[i]['distances']:
-                    #outputfile.write(' ' * 8 + str(distance) + '\n')
-                
-                outputfile.write(' ' * 4 + 'closest: ' + '\n')
-                for member in result[i]['closest']:
-                    outputfile.write(' ' * 8 + str(member[0]) + ': ' + str(member[1]) + '\n')
-                #outputfile.write(' ' * 4 + 'farest: ' + '\n')
-                #for member in result[i]['farest']:
-                    #outputfile.write(' ' * 8 + str(member[0]) + ': ' + str(member[1]) + '\n')
 
-                outputfile.write('\n\n')
-            #pp = pprint.PrettyPrinter(indent=4, stream=outputfile, depth=4, width=200)
-            #pp.pprint(result)
-            #json.dump(result, outputfile, indent='\t')
-            
+            result[i] = cluster_data
+
+        # with open('json_format.json', 'w') as fp:
+        # json.dump(result, fp, indent=4)
+
+        with io.open(args.out_file, "w", encoding="utf-8") as outputfile:
+            for i in result:
+                outputfile.write(str(i) + ":\n")
+                outputfile.write(" " * 4 + "len: " + str(result[i]["len"]) + "\n")
+                outputfile.write(" " * 4 + "center: " + result[i]["center"] + "\n")
+                outputfile.write(" " * 4 + "members: " + "\n")
+                for j in range(len(result[i]["members"])):
+                    outputfile.write(
+                        " " * 8
+                        + "- "
+                        + str(result[i]["categories"][j])
+                        + ": "
+                        + str(result[i]["members"][j])
+                        + "\n"
+                    )
+                # outputfile.write(' ' * 4 + 'distances: ' + '\n')
+                # for distance in result[i]['distances']:
+                # outputfile.write(' ' * 8 + str(distance) + '\n')
+
+                outputfile.write(" " * 4 + "closest: " + "\n")
+                for member in result[i]["closest"]:
+                    outputfile.write(
+                        " " * 8 + str(member[0]) + ": " + str(member[1]) + "\n"
+                    )
+                # outputfile.write(' ' * 4 + 'farest: ' + '\n')
+                # for member in result[i]['farest']:
+                # outputfile.write(' ' * 8 + str(member[0]) + ': ' + str(member[1]) + '\n')
+
+                outputfile.write("\n\n")
+            # pp = pprint.PrettyPrinter(indent=4, stream=outputfile, depth=4, width=200)
+            # pp.pprint(result)
+            # json.dump(result, outputfile, indent='\t')
+
+    def cluster_dataset(self):
+        global args
+        titles, texts = dataset_loader.load_data()
+
+        if args.clust_alg == "affinity":
+            af, sim_matrix = self.clusterizer.clusterize_affinity_propagation(
+                titles, texts, args.affinity_sim, args.diag_val
+            )
+            self.write_affinity_results(af, sim_matrix)
+
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Process some integers.')
-    
-    parser.add_argument('--small_run', dest='small_run', action='store_true', default=False)
-    parser.add_argument('--title_cosine', dest='title_cosine', action='store_true', default=False)
-    parser.add_argument('--all_cosine', dest='all_cosine', action='store_true', default=False)
-    parser.add_argument('--jaccard', dest='jaccard', action='store_true', default=False)
-    parser.add_argument('--nouns_only', dest='nouns_only', action='store_true', default=False)
-    parser.add_argument('--non_freq_nouns', dest='non_freq_nouns', action='store_true', default=False)
-    parser.add_argument('--out_file', dest='out_file', action='store', type=str, default='out.txt')
-    parser.add_argument('--diag_val', dest='diag_val', action='store', type=float, default=1)
-    parser.add_argument('--cos_treshold', dest='cos_treshold', action='store', type=float, default=0.0)
+    parser = argparse.ArgumentParser(description="Process some integers.")
+
+    parser.add_argument(
+        "--small_run", dest="small_run", action="store_true", default=False
+    )
+    parser.add_argument(
+        "--clust_alg",
+        dest="clust_alg",
+        action="store",
+        type=str,
+        default="affinity",
+        choices=["affinity"],
+        help="Clusterization algorithm use",
+    )
+    parser.add_argument(
+        "--affinity_sim",
+        dest="affinity_sim",
+        action="store",
+        type=str,
+        default="jaccard",
+        choices=["jaccard", "title_cosine", "all_cosine"],
+        help="Similarity to be used by affinity for clusterization",
+    )
+    parser.add_argument(
+        "--nouns_only", dest="nouns_only", action="store_true", default=False
+    )
+    parser.add_argument(
+        "--non_freq_nouns", dest="non_freq_nouns", action="store_true", default=False
+    )
+    parser.add_argument(
+        "--out_file", dest="out_file", action="store", type=str, default="out.txt"
+    )
+    parser.add_argument(
+        "--diag_val",
+        dest="diag_val",
+        action="store",
+        type=float,
+        default=1,
+        help="Diagonal value to be added on affinity matrix",
+    )
+    parser.add_argument(
+        "--cos_treshold", dest="cos_treshold", action="store", type=float, default=0.0
+    )
 
     args = parser.parse_args()
 
     for k in args.__dict__:
         if args.__dict__[k] is not None:
-            print(k, '->', args.__dict__[k])
+            print(k, "->", args.__dict__[k])
 
     dataset_loader = DatasetLoader()
-    all_titles, all_texts = dataset_loader.load_data()
-    
-    #sim_matrix = dataset_loader.compute_similarity_matrix(all_texts, all_titles)
-
-    #dataset_loader.cluster_articles(sim_matrix)
+    dataset_loader.cluster_dataset()

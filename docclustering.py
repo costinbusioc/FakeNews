@@ -176,7 +176,7 @@ class DocClustering:
 
         return sim_matrix
 
-    def clusterize_affinity_propagation(self, titles, texts, sim="jaccard", diag_val=0):
+    def clusterize_affinity_propagation(self, titles, texts, sim, diag_val):
         processed_titles, processed_texts = self.process_title_text(titles, texts)
 
         sim_matrix = self.compute_similarity_matrix(
