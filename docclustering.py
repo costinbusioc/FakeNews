@@ -1,18 +1,7 @@
-import pprint
-import io
 import numpy as np
-import csv
 import sys
-import json
-import heapq
 
-from functools import reduce
-from operator import itemgetter
-from collections import Counter
-
-from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.cluster import AffinityPropagation
-from sklearn.preprocessing import normalize
 
 from scipy.spatial.distance import cdist
 
@@ -21,8 +10,6 @@ from gensim.models.keyedvectors import KeyedVectors
 sys.path.insert(0, "readerbenchpy")
 from rb.parser.spacy_parser import SpacyParser
 from rb.core import lang
-
-
 
 class DocClustering:
     MAX_NB_WORDS = 1000000
