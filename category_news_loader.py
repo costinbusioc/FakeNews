@@ -21,7 +21,7 @@ class DatasetLoader:
         self.input_file = "category_news.csv"
         self.output_file = args.out_file
 
-        w2v_needed = args.clust_alg == "birch" or args.clust_dict == "dbscan"
+        w2v_needed = args.clust_alg == "birch" or args.clust_alg == "dbscan"
         self.clusterizer = docclustering.DocClustering(w2v_needed=w2v_needed)
 
     def load_data(self):
