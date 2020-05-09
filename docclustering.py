@@ -1,7 +1,7 @@
 import numpy as np
 import sys
 
-from sklearn.cluster import AffinityPropagation
+from sklearn.cluster import AffinityPropagation, Birch
 
 from scipy.spatial.distance import cdist
 
@@ -147,7 +147,7 @@ class DocClustering:
 
         return sim_matrix
 
-    def all_cosine_matrix(self, titles, texts, diag_val=0):
+    def all_cosine_matrix(self, titles, texts):
         titles_w2v_sum = self.compute_w2v_avg(titles)
         sim_matrix_titles = cdist(titles_w2v_sum, titles_w2v_sum, metric="cosine")
 
@@ -186,3 +186,24 @@ class DocClustering:
         af = af_prop.fit(sim_matrix)
         print("Afinity done")
         return af, sim_matrix
+
+    def text_to_vector(self, titles, texts, vector_repr):
+        if vector_repr == "w2v_titles":
+            return self.compute_w2v_avg(titles)
+        elif vector_repr == "w2v_texts":
+            return self.compute_w2v_avg(texts)
+        elif vector_repr == "w2v_titles_texts":
+            vector_titles = self.compute_w2v_avg(titles)
+            vector_texts = self.compute_w2v_avg(texts)
+            return [sum(e) / len(e) for e in zip([vector_titles, vector_texts])]
+
+    def clusterize_birch(self, titles, texts, vector_repr):
+        processed_titles, processed_texts = self.process_title_text(titles, texts)
+
+        vector_represenation = self.text_to_vector(
+            processed_titles, processed_texts, vector_repr
+        )
+        brc = Birch().fit(vector_represenation)
+        predictions = brc.predict()
+
+        return predictions

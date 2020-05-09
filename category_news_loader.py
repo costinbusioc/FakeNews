@@ -12,6 +12,7 @@ sources_dict = {}
 
 from collections import Counter
 
+
 class DatasetLoader:
     input_file = "category_news.csv"
     output_file = "results.txt"
@@ -178,6 +179,11 @@ class DatasetLoader:
                 titles, texts, args.affinity_sim, args.diag_val
             )
             self.write_affinity_results(af, sim_matrix)
+        elif args.clust_alg == "birch":
+            predictions = self.clusterizer.clusterize_birch(
+                titles, texts, args.vector_repr
+            )
+            print(predictions)
 
 
 if __name__ == "__main__":
@@ -192,7 +198,7 @@ if __name__ == "__main__":
         action="store",
         type=str,
         default="affinity",
-        choices=["affinity"],
+        choices=["affinity", "birch"],
         help="Clusterization algorithm use",
     )
     parser.add_argument(
@@ -203,6 +209,15 @@ if __name__ == "__main__":
         default="jaccard",
         choices=["jaccard", "title_cosine", "all_cosine"],
         help="Similarity to be used by affinity for clusterization",
+    )
+    parser.add_argument(
+        "--vector_repr",
+        dest="vector_repr",
+        action="store",
+        type=str,
+        default="w2v_titles",
+        choices=["w2v_titles", "w2v_texts", "w2v_titles_texts"],
+        help="Vector text represenation for birch",
     )
     parser.add_argument(
         "--nouns_only", dest="nouns_only", action="store_true", default=False
