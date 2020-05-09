@@ -186,6 +186,11 @@ class DatasetLoader:
                 titles, texts, args.vector_repr
             )
             print(predictions)
+        elif args.clust_alg == "dbscan":
+            predictions = self.clusterizer.clusterize_dbscan(
+                titles, texts, args.vector_repr
+            )
+            print(predictions)
 
 
 if __name__ == "__main__":
@@ -200,7 +205,7 @@ if __name__ == "__main__":
         action="store",
         type=str,
         default="affinity",
-        choices=["affinity", "birch"],
+        choices=["affinity", "birch", "dbscan"],
         help="Clusterization algorithm use",
     )
     parser.add_argument(

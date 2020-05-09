@@ -1,7 +1,7 @@
 import numpy as np
 import sys
 
-from sklearn.cluster import AffinityPropagation, Birch
+from sklearn.cluster import AffinityPropagation, Birch, DBSCAN
 
 from scipy.spatial.distance import cdist
 
@@ -207,3 +207,15 @@ class DocClustering:
         predictions = brc.predict(vector_representation)
 
         return predictions
+
+    def clusterize_dbscan(self, titles, texts, vector_repr):
+        processed_titles, processed_texts = self.process_title_text(titles, texts)
+
+        vector_represenation = self.text_to_vector(
+            processed_titles, processed_texts, vector_repr
+        )
+        dbscan = DBSCAN().fit(np.array(vector_represenation))
+        predictions = dbscan.labels_
+
+        return predictions
+
