@@ -19,7 +19,9 @@ class DatasetLoader:
     nouns_file = "non_freq_nouns.txt"
 
     def __init__(self):
-        self.clusterizer = docclustering.DocClustering()
+        global args
+        w2v_needed = args.clust_alg == "birch"
+        self.clusterizer = docclustering.DocClustering(w2v_needed=w2v_needed)
 
     def load_data(self):
         global args
@@ -198,7 +200,7 @@ if __name__ == "__main__":
         action="store",
         type=str,
         default="affinity",
-        choices=["affinity"],
+        choices=["affinity", "birch"],
         help="Clusterization algorithm use",
     )
     parser.add_argument(
