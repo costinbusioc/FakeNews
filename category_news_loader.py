@@ -3,7 +3,7 @@ import io
 import csv
 import json
 import heapq
-import docclustering
+import doc_clustering
 
 import argparse
 
@@ -22,7 +22,7 @@ class DatasetLoader:
         self.output_file = args.out_file
 
         w2v_needed = not args.vector_repr == "bert"
-        self.clusterizer = docclustering.DocClustering(w2v_needed=w2v_needed)
+        self.clusterizer = doc_clustering.DocClustering(w2v_needed=w2v_needed)
 
     def load_data(self):
         global args

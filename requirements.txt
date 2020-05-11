@@ -12,3 +12,4 @@ sklearn==0.0
 spacy==2.2.4
 wget==3.2
 tensorflow==2.0.0a0
+pandas

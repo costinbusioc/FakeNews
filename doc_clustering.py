@@ -9,7 +9,7 @@ from gensim.models.keyedvectors import KeyedVectors
 
 from rb.core.lang import Lang
 from rb.parser.spacy_parser import SpacyParser
-#from rb.processings.encoders.bert import BertWrapper
+from rb.processings.encoders.bert import BertWrapper
 from tensorflow import keras
 
 class DocClustering:
