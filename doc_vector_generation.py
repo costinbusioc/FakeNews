@@ -4,6 +4,7 @@ import io
 import csv
 
 import argparse
+from collections import Counter
 
 from gensim.models.keyedvectors import KeyedVectors
 
@@ -26,7 +27,14 @@ class DocVectorGeneration:
     word_embeddings_model = "word2vec.model"
     embeddings_dim = 300
 
-    def __init__(self, input_file, output_file, w2v_needed=False, non_freq_nouns=False):
+    def __init__(
+        self,
+        input_file,
+        output_file,
+        small_run=True,
+        w2v_needed=False,
+        non_freq_nouns=False,
+    ):
         self.input_file = input_file
         self.output_file = output_file
 
@@ -39,8 +47,9 @@ class DocVectorGeneration:
                 for line in f.readlines():
                     self.non_freq_nouns.append(line.strip())
 
-    def load_data(self):
-        global args
+        self.load_data(small_run)
+
+    def load_data(self, small_run):
         global sources_dict
 
         csv.field_size_limit(10000000)
@@ -77,14 +86,15 @@ class DocVectorGeneration:
                     cnt_skipped_examples, index, len(categories)
                 )
             )
-            print("labels distribution, all: ")
-            counters_categories = Counter(categories)
-            print(counters_categories)
 
         if args.small_run == True:
             titles = titles[:100]
             texts = texts[:100]
             categories = categories[:100]
+
+        print("labels distribution, all: ")
+        counters_categories = Counter(categories)
+        print(counters_categories)
 
         self.categories = categories
         self.titles = titles
@@ -183,7 +193,6 @@ class DocVectorGeneration:
             print(predictions)
             return predictions
         else:
-
             if vector_repr == "w2v_titles":
                 titles = self.preprocess_text(titles)
                 return self.compute_w2v_avg(titles)
@@ -197,11 +206,12 @@ class DocVectorGeneration:
                 return [sum(e) / len(e) for e in zip([vector_titles, vector_texts])]
 
     def vectorize_text(self, vector_repr):
+        print("Inainte de vectori")
         vectors = self.text_to_vector(self.titles, self.texts, vector_repr)
 
         cols_name = ["Title", "Text", "Category", "Vector"]
         cols = [self.titles, self.texts, self.categories, vectors]
-        write_csv("new_tennis_players.csv", cols_name, cols)
+        write_csv(self.output_file, cols_name, cols)
 
 
 if __name__ == "__main__":
@@ -226,7 +236,7 @@ if __name__ == "__main__":
         "--non_freq_nouns", dest="non_freq_nouns", action="store_true", default=False
     )
     parser.add_argument(
-        "--out_file", dest="out_file", action="store", type=str, default="out.txt"
+        "--out_file", dest="out_file", action="store", type=str, default="out.csv"
     )
 
     args = parser.parse_args()
@@ -235,5 +245,7 @@ if __name__ == "__main__":
         if args.__dict__[k] is not None:
             print(k, "->", args.__dict__[k])
 
-    doc_vector_generation = DocVectorGeneration("category_news.csv", args.out_file)
+    doc_vector_generation = DocVectorGeneration(
+        "category_news.csv", args.out_file, small_run=args.small_run, w2v_needed=(args.vector_repr != "bert")
+    )
     doc_vector_generation.vectorize_text(args.vector_repr)
