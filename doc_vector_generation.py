@@ -184,7 +184,7 @@ class DocVectorGeneration:
         if vector_repr == "bert":
             bert_wrapper = BertWrapper(Lang.RO, max_seq_len=128)
             inputs, bert_output = bert_wrapper.create_inputs_and_model()
-            cls_output = self.bert.get_output(bert_output, "cls")
+            cls_output = bert_wrapper.get_output(bert_output, "cls")
 
             model = keras.Model(inputs=inputs, outputs=[cls_output])
             bert_wrapper.load_weights()
