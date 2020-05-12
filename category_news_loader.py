@@ -18,7 +18,7 @@ class DatasetLoader:
 
     def __init__(self):
         global args
-        self.input_file = "category_news.csv"
+        self.input_file = "category_news_bert_vectors.csv"
         self.output_file = args.out_file
 
         w2v_needed = not args.vector_repr == "bert"
@@ -34,7 +34,9 @@ class DatasetLoader:
         texts, titles, categories, vectors = [], [], [], []
         cnt_skipped_examples = 0
 
-        with io.open(self.input_file, "r", encoding="utf-8", errors="replace") as csv_file:
+        with io.open(
+            self.input_file, "r", encoding="utf-8", errors="replace"
+        ) as csv_file:
             index = 0
             csv_reader = csv.reader(csv_file, delimiter=",")
 
@@ -45,7 +47,14 @@ class DatasetLoader:
                     try:
                         title = line[1].strip()
                         text = line[2].strip()
+
                         vector = line[4].strip()
+                        vector = vector.split()
+                        if vector[0] == "[":
+                            vector = vector[1:]
+                        if vector[-1][-1] == "]":
+                            vector[-1] = vector[-1][:-1]
+                        vector = list(map(float, vector))
 
                     except:
                         cnt_skipped_examples += 1
@@ -57,6 +66,10 @@ class DatasetLoader:
                     texts.append(text)
                     categories.append(category)
                     vectors.append(vector)
+
+                    if args.small_run == True:
+                        if len(titles) == 100:
+                            break
 
             print(
                 "dataset loaded, skipped examples {} from total of {}, remaining {}".format(
@@ -253,7 +266,6 @@ class DatasetLoader:
             # pp.pprint(result)
             # json.dump(result, outputfile, indent='\t')
 
-
     def cluster_dataset(self):
         if args.clust_alg == "affinity":
             af, sim_matrix = self.clusterizer.clusterize_affinity_propagation(
@@ -261,14 +273,10 @@ class DatasetLoader:
             )
             self.write_affinity_results(af, sim_matrix)
         elif args.clust_alg == "birch":
-            predictions = self.clusterizer.clusterize_birch(
-                self.vectors
-            )
+            predictions = self.clusterizer.clusterize_birch(self.vectors)
             self.write_birch_results(predictions)
         elif args.clust_alg == "dbscan":
-            predictions = self.clusterizer.clusterize_dbscan(
-                self.vectors
-            )
+            predictions = self.clusterizer.clusterize_dbscan(self.vectors)
             self.write_dbscan_results(predictions)
 
 
@@ -283,7 +291,7 @@ if __name__ == "__main__":
         dest="clust_alg",
         action="store",
         type=str,
-        default="affinity",
+        default="birch",
         choices=["affinity", "birch", "dbscan"],
         help="Clusterization algorithm use",
     )
