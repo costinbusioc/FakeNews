@@ -257,7 +257,7 @@ class DatasetLoader:
     def cluster_dataset(self):
         if args.clust_alg == "affinity":
             af, sim_matrix = self.clusterizer.clusterize_affinity_propagation(
-                self.titles, self.texts, args.affinity_sim, args.diag_val
+                args.affinity_sim, args.diag_val, self.titles, self.texts, self.vectors
             )
             self.write_affinity_results(af, sim_matrix)
         elif args.clust_alg == "birch":
@@ -293,7 +293,7 @@ if __name__ == "__main__":
         action="store",
         type=str,
         default="jaccard",
-        choices=["jaccard", "title_cosine", "all_cosine"],
+        choices=["jaccard", "cosine"],
         help="Similarity to be used by affinity for clusterization",
     )
     parser.add_argument(

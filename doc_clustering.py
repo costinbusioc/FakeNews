@@ -82,7 +82,7 @@ class DocClustering:
 
         return processed_titles, processed_texts
 
-    def jaccard_matrix(self, titles, texts, diag_val=0):
+    def jaccard_matrix(self, titles, texts):
         processed_nouns = []
         for i in range(len(titles)):
             processed_nouns.append(set(titles[i]).union(set(texts[i])))
@@ -104,9 +104,8 @@ class DocClustering:
 
         return sim_matrix
 
-    def title_cosine_matrix(self, titles, texts, diag_val=0):
-        titles_w2v_sum = helpers.compute_w2v_avg(titles, self.embeddings_dim, self.word_emb)
-        sim_matrix = cdist(titles_w2v_sum, titles_w2v_sum, metric="cosine")
+    def cosine_matrix(self, vectors):
+        sim_matrix = cdist(vectors, vectors, metric="cosine")
 
         for i in range(len(sim_matrix)):
             for j in range(len(sim_matrix[i])):
@@ -119,28 +118,12 @@ class DocClustering:
 
         return sim_matrix
 
-    def all_cosine_matrix(self, titles, texts):
-        titles_w2v_sum = helpers.compute_w2v_avg(titles, self.embeddings_dim, self.word_emb)
-        sim_matrix_titles = cdist(titles_w2v_sum, titles_w2v_sum, metric="cosine")
-
-        texts_w2v_sum = helpers.compute_w2v_avg(texts, self.embeddings_dim, self.word_emb)
-        sim_matrix_texts = cdist(texts_w2v_sum, texts_w2v_sum, metric="cosine")
-
-        sim_matrix = sim_matrix_titles
-        for i in range(len(sim_matrix)):
-            for j in range(len(sim_matrix[i])):
-                sim_matrix[i][j] += sim_matrix_texts[i][j]
-                sim_matrix[i][j] /= 2
-
-        return sim_matrix
-
-    def compute_similarity_matrix(self, titles, texts, sim, diag_val):
+    def compute_similarity_matrix(self, sim, diag_val, titles, texts, vectors):
         if sim == "jaccard":
-            sim_matrix = self.jaccard_matrix(titles, texts)
-        elif sim == "title_cosine":
-            sim_matrix = self.title_cosine_matrix(titles, texts)
-        elif sim == "all_cosine":
-            return self.all_cosine_matrix(titles, texts)
+            processed_titles, processed_texts = self.process_title_text(titles, texts)
+            sim_matrix = self.jaccard_matrix(processed_titles, processed_texts)
+        elif sim == "cosine":
+            sim_matrix = self.cosine_matrix(vectors)
 
         for i in range(len(sim_matrix)):
             sim_matrix[i][i] += diag_val
@@ -148,11 +131,9 @@ class DocClustering:
 
         return sim_matrix
 
-    def clusterize_affinity_propagation(self, titles, texts, sim, diag_val):
-        processed_titles, processed_texts = self.process_title_text(titles, texts)
-
+    def clusterize_affinity_propagation(self, sim, diag_val, titles=None, texts=None, vectors=None):
         sim_matrix = self.compute_similarity_matrix(
-            processed_titles, processed_texts, sim, diag_val
+            sim, diag_val, titles, texts, vectors
         )
         af_prop = AffinityPropagation(affinity="precomputed")
         af = af_prop.fit(sim_matrix)
