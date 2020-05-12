@@ -1,19 +1,16 @@
-import numpy as np
-
 import io
 import csv
 
 import argparse
 from collections import Counter
 
-from gensim.models.keyedvectors import KeyedVectors
 
 from rb.core.lang import Lang
 from rb.parser.spacy_parser import SpacyParser
 from rb.processings.encoders.bert import BertWrapper
 from tensorflow import keras
 
-from helpers import write_csv
+import helpers
 
 args = None
 
@@ -39,7 +36,7 @@ class DocVectorGeneration:
 
         w2v_needed = vector_repr != 'bert'
         if w2v_needed:
-            self.load_w2v_model()
+            self.word_emb = helpers.load_w2v_model(self.word_embeddings_model)
 
         if non_freq_nouns:
             self.non_freq_nouns = []
@@ -102,13 +99,6 @@ class DocVectorGeneration:
 
         return titles, texts
 
-    def load_w2v_model(self):
-        print("Loading model")
-        self.word_emb = KeyedVectors.load_word2vec_format(
-            self.word_embeddings_model, binary=False
-        )
-        print("Model loaded")
-
     def preprocess_text(self, texts, nouns_only=False, non_freq_nouns=False):
         docs = [self.nlp_ro(text) for text in texts]
         docs = [[token for token in doc if not token.is_stop] for doc in docs]
@@ -162,24 +152,6 @@ class DocVectorGeneration:
 
         return processed_titles, processed_texts
 
-    def compute_w2v_avg(self, texts):
-        avg_w2v = []
-
-        for doc in texts:
-            sum_doc = np.zeros(self.embeddings_dim)
-            for token in doc:
-                word_v = np.zeros(self.embeddings_dim)
-                if token in self.word_emb:
-                    word_v = self.word_emb[token]
-                sum_doc = np.add(sum_doc, word_v)
-
-            if len(doc):
-                avg_w2v.append(sum_doc / len(doc))
-            else:
-                avg_w2v.append(sum_doc)
-
-        return avg_w2v
-
     def text_to_vector(self, titles, texts, vector_repr):
         if vector_repr == "bert":
             bert_wrapper = BertWrapper(Lang.RO, max_seq_len=128)
@@ -198,14 +170,14 @@ class DocVectorGeneration:
         else:
             if vector_repr == "w2v_titles":
                 titles = self.preprocess_text(titles)
-                return self.compute_w2v_avg(titles)
+                return helpers.compute_w2v_avg(titles, self.embeddings_dim, self.word_emb)
             elif vector_repr == "w2v_texts":
                 texts = self.preprocess_text(texts)
-                return self.compute_w2v_avg(texts)
+                return helpers.compute_w2v_avg(texts, self.embeddings_dim, self.word_emb)
             elif vector_repr == "w2v_titles_texts":
                 titles, texts = self.process_title_text(titles, texts)
-                vector_titles = self.compute_w2v_avg(titles)
-                vector_texts = self.compute_w2v_avg(texts)
+                vector_titles = helpers.compute_w2v_avg(titles, self.embeddings_dim, self.word_emb)
+                vector_texts = helpers.compute_w2v_avg(texts, self.embeddings_dim, self.word_emb)
                 return [sum(e) / len(e) for e in zip([vector_titles, vector_texts])]
 
     def vectorize_text(self, vector_repr):
@@ -214,7 +186,7 @@ class DocVectorGeneration:
 
         cols_name = ["Title", "Text", "Category", "Vector"]
         cols = [self.titles, self.texts, self.categories, vectors]
-        write_csv(self.output_file, cols_name, cols)
+        helpers.write_csv(self.output_file, cols_name, cols)
 
 
 if __name__ == "__main__":

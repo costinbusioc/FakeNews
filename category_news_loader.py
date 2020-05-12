@@ -23,6 +23,7 @@ class DatasetLoader:
 
         w2v_needed = not args.vector_repr == "bert"
         self.clusterizer = doc_clustering.DocClustering(w2v_needed=w2v_needed)
+        self.load_data()
 
     def load_data(self):
         global args
@@ -30,7 +31,7 @@ class DatasetLoader:
 
         csv.field_size_limit(10000000)
 
-        texts, titles, categories = [], [], []
+        texts, titles, categories, vectors = [], [], [], []
         cnt_skipped_examples = 0
 
         with io.open(self.input_file, "r", encoding="utf-8", errors="replace") as csv_file:
@@ -44,6 +45,7 @@ class DatasetLoader:
                     try:
                         title = line[1].strip()
                         text = line[2].strip()
+                        vector = line[4].strip()
 
                     except:
                         cnt_skipped_examples += 1
@@ -54,6 +56,7 @@ class DatasetLoader:
                     titles.append(title)
                     texts.append(text)
                     categories.append(category)
+                    vectors.append(vector)
 
             print(
                 "dataset loaded, skipped examples {} from total of {}, remaining {}".format(
@@ -68,12 +71,12 @@ class DatasetLoader:
             titles = titles[:100]
             texts = texts[:100]
             categories = categories[:100]
+            vectors = vectors[:100]
 
         self.categories = categories
         self.titles = titles
         self.texts = texts
-
-        return titles, texts
+        self.vectors = vectors
 
     def write_affinity_results(self, af, sim):
         result = {}
@@ -252,22 +255,19 @@ class DatasetLoader:
 
 
     def cluster_dataset(self):
-        global args
-        titles, texts = dataset_loader.load_data()
-
         if args.clust_alg == "affinity":
             af, sim_matrix = self.clusterizer.clusterize_affinity_propagation(
-                titles, texts, args.affinity_sim, args.diag_val
+                self.titles, self.texts, args.affinity_sim, args.diag_val
             )
             self.write_affinity_results(af, sim_matrix)
         elif args.clust_alg == "birch":
             predictions = self.clusterizer.clusterize_birch(
-                titles, texts, args.vector_repr
+                self.vectors
             )
             self.write_birch_results(predictions)
         elif args.clust_alg == "dbscan":
             predictions = self.clusterizer.clusterize_dbscan(
-                titles, texts, args.vector_repr
+                self.vectors
             )
             self.write_dbscan_results(predictions)
 
