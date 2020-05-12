@@ -185,12 +185,15 @@ class DocVectorGeneration:
             bert_wrapper = BertWrapper(Lang.RO, max_seq_len=128)
             inputs, bert_output = bert_wrapper.create_inputs_and_model()
             cls_output = bert_wrapper.get_output(bert_output, "cls")
+            print('dupa class output')
 
             model = keras.Model(inputs=inputs, outputs=[cls_output])
             bert_wrapper.load_weights()
+            print('weights loaded')
             feed_inputs = bert_wrapper.process_input(texts)
+            print('inputs processed')
             predictions = model.predict(feed_inputs, batch_size=32)
-            print(predictions)
+            print('predictionssssss')
             return predictions
         else:
             if vector_repr == "w2v_titles":
