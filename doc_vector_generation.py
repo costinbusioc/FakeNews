@@ -30,14 +30,14 @@ class DocVectorGeneration:
     def __init__(
         self,
         input_file,
-        output_file,
+        vector_repr,
         small_run=True,
-        w2v_needed=False,
         non_freq_nouns=False,
     ):
         self.input_file = input_file
-        self.output_file = output_file
+        self.output_file = input_file.split('.')[0] + '_' + vector_repr + '_vectors.csv'
 
+        w2v_needed = vector_repr != 'bert'
         if w2v_needed:
             self.load_w2v_model()
 
@@ -238,9 +238,6 @@ if __name__ == "__main__":
     parser.add_argument(
         "--non_freq_nouns", dest="non_freq_nouns", action="store_true", default=False
     )
-    parser.add_argument(
-        "--out_file", dest="out_file", action="store", type=str, default="out.csv"
-    )
 
     args = parser.parse_args()
 
@@ -248,7 +245,6 @@ if __name__ == "__main__":
         if args.__dict__[k] is not None:
             print(k, "->", args.__dict__[k])
 
-    doc_vector_generation = DocVectorGeneration(
-        "category_news.csv", args.out_file, small_run=args.small_run, w2v_needed=(args.vector_repr != "bert")
-    )
+    in_file = "category_news.csv"
+    doc_vector_generation = DocVectorGeneration(in_file, args.vector_repr, small_run=args.small_run)
     doc_vector_generation.vectorize_text(args.vector_repr)
