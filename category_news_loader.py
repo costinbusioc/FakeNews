@@ -46,7 +46,7 @@ class DatasetLoader:
                 if index > 1:
                     try:
                         title = line[1].strip()
-                        text = line[2].strip()
+                        #text = line[2].strip()
 
                         vector = line[4].strip()
                         vector = vector.split()
@@ -63,7 +63,7 @@ class DatasetLoader:
                     category = line[3]
 
                     titles.append(title)
-                    texts.append(text)
+                    #texts.append(text)
                     categories.append(category)
                     vectors.append(vector)
 
@@ -82,13 +82,13 @@ class DatasetLoader:
 
         if args.small_run == True:
             titles = titles[:100]
-            texts = texts[:100]
+            #texts = texts[:100]
             categories = categories[:100]
             vectors = vectors[:100]
 
         self.categories = categories
         self.titles = titles
-        self.texts = texts
+        #self.texts = texts
         self.vectors = vectors
 
     def write_affinity_results(self, af, sim):
