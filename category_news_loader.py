@@ -6,6 +6,7 @@ import heapq
 import doc_clustering
 
 import argparse
+from helpers import write_csv
 
 args = None
 sources_dict = {}
@@ -45,7 +46,7 @@ class DatasetLoader:
                 # skip first x examples
                 if index > 1:
                     try:
-                        title = line[1].strip()
+                        #title = line[1].strip()
                         #text = line[2].strip()
 
                         vector = line[4].strip()
@@ -60,15 +61,15 @@ class DatasetLoader:
                         cnt_skipped_examples += 1
                         continue
 
-                    category = line[3]
+                    #category = line[3]
 
-                    titles.append(title)
+                    #titles.append(title)
                     #texts.append(text)
-                    categories.append(category)
+                    #categories.append(category)
                     vectors.append(vector)
 
                     if args.small_run == True:
-                        if len(titles) == 100:
+                        if len(vectors) == 100:
                             break
 
             print(
@@ -81,13 +82,13 @@ class DatasetLoader:
             print(counters_categories)
 
         if args.small_run == True:
-            titles = titles[:100]
+            #titles = titles[:100]
             #texts = texts[:100]
-            categories = categories[:100]
+            #categories = categories[:100]
             vectors = vectors[:100]
 
-        self.categories = categories
-        self.titles = titles
+        #self.categories = categories
+        #self.titles = titles
         #self.texts = texts
         self.vectors = vectors
 
@@ -186,6 +187,8 @@ class DatasetLoader:
         result = {}
         unique_labels = set(labels)
 
+        all_indices = []
+        all_lens = []
         for l in unique_labels:
             indices = []
 
@@ -193,13 +196,21 @@ class DatasetLoader:
                 if label == l:
                     indices.append(i)
 
-            cluster_titles = list(map(self.titles.__getitem__, indices))
-            cluster_categories = list(map(self.categories.__getitem__, indices))
+            all_indices.append(indices)
+            all_lens.append(len(indices))
+            continue
+
+        write_csv(self.output_file, ["Len", "Indices"], [all_lens, all_indices])
+        return
+
+        '''
+            #cluster_titles = list(map(self.titles.__getitem__, indices))
+            #cluster_categories = list(map(self.categories.__getitem__, indices))
 
             result[l] = {
-                "members": cluster_titles,
-                "len": len(cluster_titles),
-                "categories": cluster_categories,
+                #"members": cluster_titles,
+                "len": len(indices),
+                #"categories": cluster_categories,
             }
 
         # with open('json_format.json', 'w') as fp:
@@ -223,6 +234,7 @@ class DatasetLoader:
             # pp = pprint.PrettyPrinter(indent=4, stream=outputfile, depth=4, width=200)
             # pp.pprint(result)
             # json.dump(result, outputfile, indent='\t')
+        '''
 
     def write_dbscan_results(self, labels):
         result = {}
@@ -320,7 +332,7 @@ if __name__ == "__main__":
         "--non_freq_nouns", dest="non_freq_nouns", action="store_true", default=False
     )
     parser.add_argument(
-        "--out_file", dest="out_file", action="store", type=str, default="out.txt"
+        "--out_file", dest="out_file", action="store", type=str, default="out.csv"
     )
     parser.add_argument(
         "--diag_val",
