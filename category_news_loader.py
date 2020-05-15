@@ -3,6 +3,7 @@ import io
 import csv
 import json
 import heapq
+import numpy as np
 import doc_clustering
 from pympler import asizeof
 
@@ -59,6 +60,7 @@ class DatasetLoader:
                         if vector[-1][-1] == "]":
                             vector[-1] = vector[-1][:-1]
                         vector = list(map(float, vector))
+                        vector = np.array(vector, dtype=np.float32)
 
                     except:
                         cnt_skipped_examples += 1
