@@ -3,7 +3,9 @@ import io
 import csv
 import json
 import heapq
+import numpy as np
 import doc_clustering
+from pympler import asizeof
 
 import argparse
 from helpers import write_csv
@@ -44,6 +46,8 @@ class DatasetLoader:
             for line in csv_reader:
                 index += 1
                 # skip first x examples
+                if index == 3:
+                    print(asizeof.asizeof(vector))
                 if index > 1:
                     try:
                         #title = line[1].strip()
@@ -56,6 +60,7 @@ class DatasetLoader:
                         if vector[-1][-1] == "]":
                             vector[-1] = vector[-1][:-1]
                         vector = list(map(float, vector))
+                        vector = np.array(vector, dtype=np.float32)
 
                     except:
                         cnt_skipped_examples += 1
@@ -91,6 +96,7 @@ class DatasetLoader:
         #self.titles = titles
         #self.texts = texts
         self.vectors = vectors
+        print(f"ALL: {asizeof.asizeof(self.vectors)}")
 
     def write_affinity_results(self, af, sim):
         result = {}
@@ -353,4 +359,5 @@ if __name__ == "__main__":
             print(k, "->", args.__dict__[k])
 
     dataset_loader = DatasetLoader()
+    print(f"obj: {asizeof.asizeof(dataset_loader)}")
     dataset_loader.cluster_dataset()
