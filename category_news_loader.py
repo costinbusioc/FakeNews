@@ -3,9 +3,12 @@ import io
 import csv
 import json
 import heapq
+import random
 import numpy as np
 import doc_clustering
 from pympler import asizeof
+from operator import itemgetter
+from collections import defaultdict
 
 import argparse
 from helpers import write_csv
@@ -21,12 +24,11 @@ class DatasetLoader:
 
     def __init__(self):
         global args
-        self.input_file = "category_news_bert_vectors.csv"
+        self.input_file = "category_news_bert_vectors_0.2.csv"
         self.output_file = args.out_file
 
         w2v_needed = not args.vector_repr == "bert"
         self.clusterizer = doc_clustering.DocClustering(w2v_needed=w2v_needed)
-        self.load_data()
 
     def load_data(self):
         global args
@@ -46,12 +48,10 @@ class DatasetLoader:
             for line in csv_reader:
                 index += 1
                 # skip first x examples
-                if index == 3:
-                    print(asizeof.asizeof(vector))
                 if index > 1:
                     try:
-                        #title = line[1].strip()
-                        #text = line[2].strip()
+                        # title = line[1].strip()
+                        # text = line[2].strip()
 
                         vector = line[4].strip()
                         vector = vector.split()
@@ -66,11 +66,11 @@ class DatasetLoader:
                         cnt_skipped_examples += 1
                         continue
 
-                    #category = line[3]
+                    # category = line[3]
 
-                    #titles.append(title)
-                    #texts.append(text)
-                    #categories.append(category)
+                    # titles.append(title)
+                    # texts.append(text)
+                    # categories.append(category)
                     vectors.append(vector)
 
                     if args.small_run == True:
@@ -87,16 +87,108 @@ class DatasetLoader:
             print(counters_categories)
 
         if args.small_run == True:
-            #titles = titles[:100]
-            #texts = texts[:100]
-            #categories = categories[:100]
+            # titles = titles[:100]
+            # texts = texts[:100]
+            # categories = categories[:100]
             vectors = vectors[:100]
 
-        #self.categories = categories
-        #self.titles = titles
-        #self.texts = texts
+        # self.categories = categories
+        # self.titles = titles
+        # self.texts = texts
         self.vectors = vectors
         print(f"ALL: {asizeof.asizeof(self.vectors)}")
+
+    def keep_dataset_percent(self, percent):
+        global args
+        global sources_dict
+
+        csv.field_size_limit(10000000)
+
+        texts, titles, categories, vectors = [], [], [], []
+        cnt_skipped_examples = 0
+
+        categories_dict = defaultdict(list)
+
+        with io.open(
+            self.input_file, "r", encoding="utf-8", errors="replace"
+        ) as csv_file:
+            index = 0
+            csv_reader = csv.reader(csv_file, delimiter=",")
+
+            for line in csv_reader:
+                # skip first x examples
+                if index:
+                    try:
+                        title = line[1].strip()
+                        text = line[2].strip()
+
+                        vector = line[4].strip()
+                        vector = vector.split()
+                        if vector[0] == "[":
+                            vector = vector[1:]
+                        if vector[-1][-1] == "]":
+                            vector[-1] = vector[-1][:-1]
+                        vector = list(map(float, vector))
+                        vector = np.array(vector, dtype=np.float32)
+
+                    except:
+                        cnt_skipped_examples += 1
+                        continue
+
+                    category = line[3]
+
+                    titles.append(title)
+                    texts.append(text)
+                    categories.append(category)
+                    vectors.append(vector)
+
+                    categories_dict[category].append(index - 1)
+
+                    if args.small_run == True:
+                        if len(vectors) == 100:
+                            break
+                index += 1
+
+            print(
+                "dataset loaded, skipped examples {} from total of {}, remaining {}".format(
+                    cnt_skipped_examples, index, len(categories)
+                )
+            )
+            print("labels distribution, all: ")
+            counters_categories = Counter(categories)
+            print(counters_categories)
+
+        if args.small_run == True:
+            titles = titles[:100]
+            texts = texts[:100]
+            categories = categories[:100]
+            vectors = vectors[:100]
+
+        print(f"ALL: {asizeof.asizeof(vectors)}")
+
+        new_texts = []
+        new_titles = []
+        new_categories = []
+        new_vectors = []
+
+        for category in categories_dict:
+            inds = set(
+                random.sample(
+                    list(range(len(categories_dict[category]))),
+                    int(percent * len(categories_dict[category])),
+                )
+            )
+
+            new_texts += list(itemgetter(*inds)(texts))
+            new_titles += list(itemgetter(*inds)(titles))
+            new_categories += ([category] * len(inds))
+            new_vectors += list(itemgetter(*inds)(vectors))
+    
+        print(Counter(new_categories))
+        input_name = self.input_file.split('.')[0]
+        out_file = f"{input_name}_{percent}.csv"
+        write_csv(out_file, ["Title", "Text", "Category", "Vector"], [new_titles, new_texts, new_categories, new_vectors])
+
 
     def write_affinity_results(self, af, sim):
         result = {}
@@ -209,7 +301,7 @@ class DatasetLoader:
         write_csv(self.output_file, ["Len", "Indices"], [all_lens, all_indices])
         return
 
-        '''
+        """
             #cluster_titles = list(map(self.titles.__getitem__, indices))
             #cluster_categories = list(map(self.categories.__getitem__, indices))
 
@@ -240,7 +332,7 @@ class DatasetLoader:
             # pp = pprint.PrettyPrinter(indent=4, stream=outputfile, depth=4, width=200)
             # pp.pprint(result)
             # json.dump(result, outputfile, indent='\t')
-        '''
+        """
 
     def write_dbscan_results(self, labels):
         result = {}
@@ -360,4 +452,7 @@ if __name__ == "__main__":
 
     dataset_loader = DatasetLoader()
     print(f"obj: {asizeof.asizeof(dataset_loader)}")
+
+    dataset_loader.load_data()
     dataset_loader.cluster_dataset()
+    #dataset_loader.keep_dataset_percent(0.2)
