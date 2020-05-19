@@ -50,8 +50,8 @@ class DatasetLoader:
                 # skip first x examples
                 if index > 1:
                     try:
-                        # title = line[1].strip()
-                        # text = line[2].strip()
+                        title = line[1].strip()
+                        text = line[2].strip()
 
                         vector = line[4].strip()
                         vector = vector.split()
@@ -66,11 +66,11 @@ class DatasetLoader:
                         cnt_skipped_examples += 1
                         continue
 
-                    # category = line[3]
+                    category = line[3]
 
-                    # titles.append(title)
-                    # texts.append(text)
-                    # categories.append(category)
+                    titles.append(title)
+                    texts.append(text)
+                    categories.append(category)
                     vectors.append(vector)
 
                     if args.small_run == True:
@@ -87,14 +87,14 @@ class DatasetLoader:
             print(counters_categories)
 
         if args.small_run == True:
-            # titles = titles[:100]
-            # texts = texts[:100]
-            # categories = categories[:100]
+            titles = titles[:100]
+            texts = texts[:100]
+            categories = categories[:100]
             vectors = vectors[:100]
 
-        # self.categories = categories
-        # self.titles = titles
-        # self.texts = texts
+        self.categories = categories
+        self.titles = titles
+        self.texts = texts
         self.vectors = vectors
         print(f"ALL: {asizeof.asizeof(self.vectors)}")
 
@@ -281,8 +281,16 @@ class DatasetLoader:
             # pp.pprint(result)
             # json.dump(result, outputfile, indent='\t')
 
+
     def write_birch_results(self, labels):
-        result = {}
+        self.write_labels_as_csv(labels)
+
+
+    def write_dbscan_results(self, labels):
+        self.write_results_by_labels(labels)
+
+
+    def write_labels_as_csv(self, labels):
         unique_labels = set(labels)
 
         all_indices = []
@@ -296,21 +304,21 @@ class DatasetLoader:
 
             all_indices.append(indices)
             all_lens.append(len(indices))
-            continue
 
         write_csv(self.output_file, ["Len", "Indices"], [all_lens, all_indices])
-        return
 
-        """
-            #cluster_titles = list(map(self.titles.__getitem__, indices))
-            #cluster_categories = list(map(self.categories.__getitem__, indices))
 
-            result[l] = {
-                #"members": cluster_titles,
-                "len": len(indices),
-                #"categories": cluster_categories,
-            }
+    def get_elements_by_indices(self, indices):
+        cluster_titles = list(map(self.titles.__getitem__, indices))
+        cluster_categories = list(map(self.categories.__getitem__, indices))
 
+        return {
+            "members": cluster_titles,
+            "len": len(indices),
+            "categories": cluster_categories,
+        }
+
+    def write_result(self, result):
         # with open('json_format.json', 'w') as fp:
         # json.dump(result, fp, indent=4)
 
@@ -332,9 +340,9 @@ class DatasetLoader:
             # pp = pprint.PrettyPrinter(indent=4, stream=outputfile, depth=4, width=200)
             # pp.pprint(result)
             # json.dump(result, outputfile, indent='\t')
-        """
 
-    def write_dbscan_results(self, labels):
+
+    def write_results_by_labels(self, labels):
         result = {}
         unique_labels = set(labels)
 
@@ -345,36 +353,39 @@ class DatasetLoader:
                 if label == l:
                     indices.append(i)
 
-            cluster_titles = list(map(self.titles.__getitem__, indices))
-            cluster_categories = list(map(self.categories.__getitem__, indices))
+            result[l] = self.get_elements_by_indices(indices)
 
-            result[l] = {
-                "members": cluster_titles,
-                "len": len(cluster_titles),
-                "categories": cluster_categories,
-            }
+        self.write_result(result)
 
-        # with open('json_format.json', 'w') as fp:
-        # json.dump(result, fp, indent=4)
 
-        with io.open(self.output_file, "w", encoding="utf-8") as outputfile:
-            for i in result:
-                outputfile.write(str(i) + ":\n")
-                outputfile.write(" " * 4 + "len: " + str(result[i]["len"]) + "\n")
-                outputfile.write(" " * 4 + "members: " + "\n")
-                for j in range(len(result[i]["members"])):
-                    outputfile.write(
-                        " " * 8
-                        + "- "
-                        + str(result[i]["categories"][j])
-                        + ": "
-                        + str(result[i]["members"][j])
-                        + "\n"
-                    )
-                outputfile.write("\n\n")
-            # pp = pprint.PrettyPrinter(indent=4, stream=outputfile, depth=4, width=200)
-            # pp.pprint(result)
-            # json.dump(result, outputfile, indent='\t')
+    def csv_to_txt(self, in_file):
+        csv.field_size_limit(10000000)
+
+        result = {}
+        cnt_skipped_examples = 0
+
+        with io.open(
+                in_file, "r", encoding="utf-8", errors="replace"
+        ) as csv_file:
+            index = 0
+            csv_reader = csv.reader(csv_file, delimiter=",")
+
+            for line in csv_reader:
+                index += 1
+                # skip first x examples
+                if index > 1:
+                    try:
+                        cluster_nr = line[0].strip()
+                        cluster_values = line[2].strip()
+
+                        indices = [int(x.strip().replace('[', '').replace(']','')) for x in cluster_values.split(',')]
+                        result[cluster_nr] = self.get_elements_by_indices(indices)
+                    except:
+                        cnt_skipped_examples += 1
+                        continue
+            print(f"Could not read {cnt_skipped_examples} lines.")
+        self.write_result(result)
+
 
     def cluster_dataset(self):
         if args.clust_alg == "affinity":
@@ -430,7 +441,7 @@ if __name__ == "__main__":
         "--non_freq_nouns", dest="non_freq_nouns", action="store_true", default=False
     )
     parser.add_argument(
-        "--out_file", dest="out_file", action="store", type=str, default="out.csv"
+        "--out_file", dest="out_file", action="store", type=str, default="out.txt"
     )
     parser.add_argument(
         "--diag_val",
@@ -454,5 +465,6 @@ if __name__ == "__main__":
     print(f"obj: {asizeof.asizeof(dataset_loader)}")
 
     dataset_loader.load_data()
-    dataset_loader.cluster_dataset()
+    dataset_loader.csv_to_txt('results/birch/out_birch_bf6_n4.csv')
+    #dataset_loader.cluster_dataset()
     #dataset_loader.keep_dataset_percent(0.2)
