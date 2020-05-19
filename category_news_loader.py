@@ -465,6 +465,6 @@ if __name__ == "__main__":
     print(f"obj: {asizeof.asizeof(dataset_loader)}")
 
     dataset_loader.load_data()
-    dataset_loader.csv_to_txt('results/birch/out_birch_bf6_n4.csv')
+    dataset_loader.csv_to_txt('results/birch/out_birch_bf10_n4.csv')
     #dataset_loader.cluster_dataset()
     #dataset_loader.keep_dataset_percent(0.2)
