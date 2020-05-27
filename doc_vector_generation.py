@@ -25,16 +25,12 @@ class DocVectorGeneration:
     embeddings_dim = 300
 
     def __init__(
-        self,
-        input_file,
-        vector_repr,
-        small_run=True,
-        non_freq_nouns=False,
+        self, input_file, vector_repr, small_run=True, non_freq_nouns=False,
     ):
         self.input_file = input_file
-        self.output_file = input_file.split('.')[0] + '_' + vector_repr + '_vectors.csv'
+        self.output_file = input_file.split(".")[0] + "_" + vector_repr + "_vectors.csv"
 
-        w2v_needed = vector_repr != 'bert'
+        w2v_needed = vector_repr != "bert"
         if w2v_needed:
             self.word_emb = helpers.load_w2v_model(self.word_embeddings_model)
 
@@ -52,6 +48,7 @@ class DocVectorGeneration:
         csv.field_size_limit(10000000)
 
         texts, titles, categories = [], [], []
+        urls, sources, dates = [], [], []
         cnt_skipped_examples = 0
 
         with io.open(
@@ -67,16 +64,22 @@ class DocVectorGeneration:
                     try:
                         title = line[1].strip()
                         text = line[2].strip()
+                        category = line[3].strip()
 
                     except:
                         cnt_skipped_examples += 1
                         continue
 
-                    category = line[3]
+                    url = line[4].strip()
+                    source = line[5].strip()
+                    date = line[6].strip()
 
                     titles.append(title)
                     texts.append(text)
                     categories.append(category)
+                    urls.append(url)
+                    sources.append(source)
+                    dates.append(date)
 
             print(
                 "dataset loaded, skipped examples {} from total of {}, remaining {}".format(
@@ -84,10 +87,13 @@ class DocVectorGeneration:
                 )
             )
 
-        if args.small_run == True:
+        if small_run == True:
             titles = titles[:100]
             texts = texts[:100]
             categories = categories[:100]
+            urls = urls[:100]
+            sources = sources[:100]
+            dates = dates[:100]
 
         print("labels distribution, all: ")
         counters_categories = Counter(categories)
@@ -96,6 +102,9 @@ class DocVectorGeneration:
         self.categories = categories
         self.titles = titles
         self.texts = texts
+        self.urls = urls
+        self.dates = dates
+        self.sources = sources
 
         return titles, texts
 
@@ -157,35 +166,51 @@ class DocVectorGeneration:
             bert_wrapper = BertWrapper(Lang.RO, max_seq_len=128)
             inputs, bert_output = bert_wrapper.create_inputs_and_model()
             cls_output = bert_wrapper.get_output(bert_output, "cls")
-            print('dupa class output')
+            print("dupa class output")
 
             model = keras.Model(inputs=inputs, outputs=[cls_output])
             bert_wrapper.load_weights()
-            print('weights loaded')
+            print("weights loaded")
             feed_inputs = bert_wrapper.process_input(texts)
-            print('inputs processed')
+            print("inputs processed")
             predictions = model.predict(feed_inputs, batch_size=32)
-            print('predictionssssss')
+            print("predictionssssss")
             return predictions
         else:
             if vector_repr == "w2v_titles":
                 titles = self.preprocess_text(titles)
-                return helpers.compute_w2v_avg(titles, self.embeddings_dim, self.word_emb)
+                return helpers.compute_w2v_avg(
+                    titles, self.embeddings_dim, self.word_emb
+                )
             elif vector_repr == "w2v_texts":
                 texts = self.preprocess_text(texts)
-                return helpers.compute_w2v_avg(texts, self.embeddings_dim, self.word_emb)
+                return helpers.compute_w2v_avg(
+                    texts, self.embeddings_dim, self.word_emb
+                )
             elif vector_repr == "w2v_titles_texts":
                 titles, texts = self.process_title_text(titles, texts)
-                vector_titles = helpers.compute_w2v_avg(titles, self.embeddings_dim, self.word_emb)
-                vector_texts = helpers.compute_w2v_avg(texts, self.embeddings_dim, self.word_emb)
+                vector_titles = helpers.compute_w2v_avg(
+                    titles, self.embeddings_dim, self.word_emb
+                )
+                vector_texts = helpers.compute_w2v_avg(
+                    texts, self.embeddings_dim, self.word_emb
+                )
                 return [sum(e) / len(e) for e in zip([vector_titles, vector_texts])]
 
     def vectorize_text(self, vector_repr):
         print("Inainte de vectori")
         vectors = self.text_to_vector(self.titles, self.texts, vector_repr)
 
-        cols_name = ["Title", "Text", "Category", "Vector"]
-        cols = [self.titles, self.texts, self.categories, vectors]
+        cols_name = ["Title", "Text", "Category", "Source", "Date", "Url", "Vector"]
+        cols = [
+            self.titles,
+            self.texts,
+            self.categories,
+            self.sources,
+            self.dates,
+            self.urls,
+            vectors,
+        ]
         helpers.write_csv(self.output_file, cols_name, cols)
 
 
@@ -218,5 +243,7 @@ if __name__ == "__main__":
             print(k, "->", args.__dict__[k])
 
     in_file = "category_news.csv"
-    doc_vector_generation = DocVectorGeneration(in_file, args.vector_repr, small_run=args.small_run)
+    doc_vector_generation = DocVectorGeneration(
+        in_file, args.vector_repr, small_run=args.small_run
+    )
     doc_vector_generation.vectorize_text(args.vector_repr)
