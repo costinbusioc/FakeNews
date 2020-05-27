@@ -1,7 +1,5 @@
-import pprint
 import io
 import csv
-import json
 import heapq
 import random
 import numpy as np
@@ -11,7 +9,7 @@ from operator import itemgetter
 from collections import defaultdict
 
 import argparse
-from helpers import write_csv
+from utils.helpers import write_csv
 
 args = None
 sources_dict = {}

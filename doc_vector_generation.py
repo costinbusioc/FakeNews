@@ -10,7 +10,7 @@ from rb.parser.spacy_parser import SpacyParser
 from rb.processings.encoders.bert import BertWrapper
 from tensorflow import keras
 
-import helpers
+from utils import helpers
 
 args = None
 

@@ -7,7 +7,8 @@ from scipy.spatial.distance import cdist
 from rb.core.lang import Lang
 from rb.parser.spacy_parser import SpacyParser
 
-import helpers
+from utils import helpers
+
 
 class DocClustering:
     MAX_NB_WORDS = 1000000
@@ -154,4 +155,3 @@ class DocClustering:
         print('Fit predict ready')
 
         return predictions
-
