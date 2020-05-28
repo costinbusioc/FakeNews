@@ -43,61 +43,9 @@ class DocVectorGeneration:
         self.load_data(small_run)
 
     def load_data(self, small_run):
-        global sources_dict
-
-        csv.field_size_limit(10000000)
-
-        texts, titles, categories = [], [], []
-        urls, sources, dates = [], [], []
-        cnt_skipped_examples = 0
-
-        with io.open(
-            self.input_file, "r", encoding="utf-8", errors="replace"
-        ) as csv_file:
-            index = 0
-            csv_reader = csv.reader(csv_file, delimiter=",")
-
-            for line in csv_reader:
-                index += 1
-                # skip first x examples
-                if index > 1:
-                    try:
-                        title = line[1].strip()
-                        text = line[2].strip()
-                        category = line[3].strip()
-
-                    except:
-                        cnt_skipped_examples += 1
-                        continue
-
-                    url = line[4].strip()
-                    source = line[5].strip()
-                    date = line[6].strip()
-
-                    titles.append(title)
-                    texts.append(text)
-                    categories.append(category)
-                    urls.append(url)
-                    sources.append(source)
-                    dates.append(date)
-
-            print(
-                "dataset loaded, skipped examples {} from total of {}, remaining {}".format(
-                    cnt_skipped_examples, index, len(categories)
-                )
-            )
-
-        if small_run == True:
-            titles = titles[:100]
-            texts = texts[:100]
-            categories = categories[:100]
-            urls = urls[:100]
-            sources = sources[:100]
-            dates = dates[:100]
-
-        print("labels distribution, all: ")
-        counters_categories = Counter(categories)
-        print(counters_categories)
+        titles, texts, categories, urls, sources, dates = helpers.load_data(
+            self.input_file, with_vec=False, small_run=small_run
+        )
 
         self.categories = categories
         self.titles = titles
@@ -105,8 +53,6 @@ class DocVectorGeneration:
         self.urls = urls
         self.dates = dates
         self.sources = sources
-
-        return titles, texts
 
     def preprocess_text(self, texts, nouns_only=False, non_freq_nouns=False):
         docs = [self.nlp_ro(text) for text in texts]
