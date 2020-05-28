@@ -234,11 +234,16 @@ class DatasetLoader:
     def get_elements_by_indices(self, indices):
         cluster_titles = list(map(self.titles.__getitem__, indices))
         cluster_categories = list(map(self.categories.__getitem__, indices))
+        cluster_dates = list(map(self.dates.__getitem__, indices))
+        cluster_sources = list(map(self.sources.__getitem__, indices))
+        
 
         return {
             "members": cluster_titles,
             "len": len(indices),
             "categories": cluster_categories,
+            "sources": cluster_sources,
+            "dates": cluster_dates,
         }
 
     def write_result(self, result):
@@ -255,7 +260,8 @@ class DatasetLoader:
                         " " * 8
                         + "- "
                         + str(result[i]["categories"][j])
-                        + ": "
+                        + "/"
+                        + f"{result[i]['sources'][j]} [{result[i]['dates'][j]}]: "
                         + str(result[i]["members"][j])
                         + "\n"
                     )
@@ -364,7 +370,7 @@ if __name__ == "__main__":
         "--non_freq_nouns", dest="non_freq_nouns", action="store_true", default=False
     )
     parser.add_argument(
-        "--out_file", dest="out_file", action="store", type=str, default="out.txt"
+        "--out_file", dest="out_file", action="store", type=str, default="out.csv"
     )
     parser.add_argument(
         "--diag_val",
@@ -387,7 +393,7 @@ if __name__ == "__main__":
     dataset_loader = DatasetLoader()
     print(f"obj: {asizeof.asizeof(dataset_loader)}")
 
-    #dataset_loader.load_data(args.small_run)
-    #dataset_loader.csv_to_txt('results/birch/out_birch_bf10_n4.csv')
+    dataset_loader.load_data(args.small_run)
+    dataset_loader.csv_to_txt('out.csv')
     #dataset_loader.cluster_dataset()
-    dataset_loader.keep_dataset_percent(0.2)
+    #dataset_loader.keep_dataset_percent(0.2)

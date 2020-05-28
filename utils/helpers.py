@@ -80,9 +80,9 @@ def load_data(input_file, with_vec=False, small_run=True):
                     cnt_skipped_examples += 1
                     continue
 
-                url = line[4].strip()
-                source = line[5].strip()
-                date = line[6].strip()
+                url = line[6].strip()
+                source = line[4].strip()
+                date = line[5].strip()
 
                 titles.append(title)
                 texts.append(text)
