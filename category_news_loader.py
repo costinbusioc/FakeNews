@@ -81,12 +81,10 @@ class DatasetLoader:
         new_vectors = []
 
         for category in categories_dict:
-            inds = set(
-                random.sample(
-                    list(range(len(categories_dict[category]))),
-                    int(percent * len(categories_dict[category])),
-                )
-            )
+            inds = list(range(len(categories_dict[category])))
+            random.shuffle(inds)
+            print(inds)
+            inds = inds[:int(percent * len(categories_dict[category]))]
 
             new_texts += list(itemgetter(*inds)(texts))
             new_titles += list(itemgetter(*inds)(titles))
@@ -304,6 +302,7 @@ class DatasetLoader:
                 # skip first x examples
                 if index > 1:
                     try:
+                        import pdb; pdb.set_trace()
                         cluster_nr = line[0].strip()
                         cluster_values = line[2].strip()
 
