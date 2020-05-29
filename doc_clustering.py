@@ -142,7 +142,7 @@ class DocClustering:
         return af, sim_matrix
 
     def clusterize_birch(self, vectors):
-        brc = Birch(branching_factor=8, n_clusters=(int(len(vectors)/4))).fit(vectors)
+        brc = Birch(branching_factor=10, n_clusters=(int(len(vectors)/4))).fit(vectors)
         print('Fit ready')
         predictions = brc.predict(vectors)
         print('Predict ready')

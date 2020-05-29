@@ -22,7 +22,7 @@ class DatasetLoader:
 
     def __init__(self):
         global args
-        self.input_file = "category_news_bert_vectors.csv"
+        self.input_file = "category_news_bert_vectors_0.2.csv"
         self.output_file = args.out_file
 
         w2v_needed = not args.vector_repr == "bert"
@@ -391,7 +391,7 @@ if __name__ == "__main__":
     dataset_loader = DatasetLoader()
     print(f"obj: {asizeof.asizeof(dataset_loader)}")
 
-    #dataset_loader.load_data(args.small_run)
+    dataset_loader.load_data(args.small_run)
     #dataset_loader.csv_to_txt('birch_bf8_n4.csv')
-    #dataset_loader.cluster_dataset()
-    dataset_loader.keep_dataset_percent(0.2)
+    dataset_loader.cluster_dataset()
+    #dataset_loader.keep_dataset_percent(0.2)
