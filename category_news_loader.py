@@ -206,7 +206,7 @@ class DatasetLoader:
 
 
     def write_birch_results(self, labels):
-        self.write_labels_as_csv(labels)
+        self.write_results_by_labels(labels)
 
 
     def write_dbscan_results(self, labels):
@@ -394,6 +394,6 @@ if __name__ == "__main__":
     print(f"obj: {asizeof.asizeof(dataset_loader)}")
 
     dataset_loader.load_data(args.small_run)
-    dataset_loader.csv_to_txt('out.csv')
-    #dataset_loader.cluster_dataset()
+    #dataset_loader.csv_to_txt('birch_bf8_n4.csv')
+    dataset_loader.cluster_dataset()
     #dataset_loader.keep_dataset_percent(0.2)
