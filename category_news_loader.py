@@ -2,8 +2,8 @@ import io
 import csv
 import heapq
 import random
-import numpy as np
 import doc_clustering
+from math import log2
 from pympler import asizeof
 from operator import itemgetter
 from collections import defaultdict
@@ -22,7 +22,7 @@ class DatasetLoader:
 
     def __init__(self):
         global args
-        self.input_file = "category_news_bert_vectors_0.2.csv"
+        self.input_file = "category_news_bert_vectors.csv"
         self.output_file = args.out_file
 
         w2v_needed = not args.vector_repr == "bert"
@@ -233,7 +233,14 @@ class DatasetLoader:
         cluster_categories = list(map(self.categories.__getitem__, indices))
         cluster_dates = list(map(self.dates.__getitem__, indices))
         cluster_sources = list(map(self.sources.__getitem__, indices))
-        
+
+        count_categories = Counter(cluster_categories)
+
+        cluster_purity = (count_categories.most_common(1)[0][1]) / len(indices)
+        cluster_entropy = 0
+        for val in count_categories:
+            prob = float(count_categories[val]) / len(indices)
+            cluster_entropy -= (prob * log2(prob))
 
         return {
             "members": cluster_titles,
@@ -241,16 +248,42 @@ class DatasetLoader:
             "categories": cluster_categories,
             "sources": cluster_sources,
             "dates": cluster_dates,
+            "purity": cluster_purity,
+            "entropy": cluster_entropy,
         }
+
+
+    def get_corpus_purity_and_entropy(self, result):
+        purity = 0
+        entropy = 0
+
+        for i, cluster in result.items():
+            len = int(cluster["len"])
+            purity += (float(cluster["purity"]) * len)
+            entropy += (float(cluster["entropy"]) * len)
+
+        return purity, entropy
+
 
     def write_result(self, result):
         # with open('json_format.json', 'w') as fp:
         # json.dump(result, fp, indent=4)
 
+        purity, entropy = self.get_corpus_purity_and_entropy(result)
         with io.open(self.output_file, "w", encoding="utf-8") as outputfile:
+            outputfile.write('Purity dataset: ' + str(purity/len(self.titles)) + '\n\n')
+            outputfile.write('Entropy dataset: ' + str(entropy/len(self.titles)) + '\n\n')
+
             for i in result:
+                purity = result[i].get("purity", None)
+                entropy = result[i].get("entropy", None)
+
                 outputfile.write(str(i) + ":\n")
                 outputfile.write(" " * 4 + "len: " + str(result[i]["len"]) + "\n")
+                if purity:
+                    outputfile.write(" " * 4 + "purity: " + str(purity) + "\n")
+                if entropy:
+                    outputfile.write(" " * 4 + "entropy: " + str(entropy) + "\n")
                 outputfile.write(" " * 4 + "members: " + "\n")
                 for j in range(len(result[i]["members"])):
                     outputfile.write(
