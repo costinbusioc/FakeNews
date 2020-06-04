@@ -22,7 +22,7 @@ class DatasetLoader:
 
     def __init__(self):
         global args
-        self.input_file = "category_news_bert_vectors_0.2.csv"
+        self.input_file = "category_news_bert_vectors.csv"
         self.output_file = args.out_file
 
         w2v_needed = not args.vector_repr == "bert"
