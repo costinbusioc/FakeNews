@@ -73,23 +73,17 @@ def load_data(input_file, with_vec=False, small_run=True):
             if index > 1:
                 try:
                     title = line[1].strip()
-                    text = line[2].strip()
+                    #text = line[2].strip()
                     category = line[3].strip()
 
                 except:
                     cnt_skipped_examples += 1
                     continue
 
-                url = line[6].strip()
+                #url = line[6].strip()
                 source = line[4].strip()
                 date = line[5].strip()
 
-                titles.append(title)
-                texts.append(text)
-                categories.append(category)
-                urls.append(url)
-                sources.append(source)
-                dates.append(date)
 
                 if with_vec:
                     vector = line[7].strip()
@@ -100,11 +94,20 @@ def load_data(input_file, with_vec=False, small_run=True):
                         vector[0] = vector[0][1:]
                     if vector[-1][-1] == "]":
                         vector[-1] = vector[-1][:-1]
-                    vector = list(map(float, vector))
+                    vector = [float(x) for x in vector]
 
                     if len(vector) != 768:
                         print(len(vector))
+                        continue
+
                     vector = np.array(vector, dtype=np.float32)
+                    
+                    titles.append(title)
+                    #texts.append(text)
+                    categories.append(category)
+                    #urls.append(url)
+                    sources.append(source)
+                    dates.append(date)
                     vectors.append(vector)
 
         print(
@@ -128,7 +131,7 @@ def load_data(input_file, with_vec=False, small_run=True):
 
     result = (titles, texts, categories, urls, sources, dates)
     if with_vec:
-        result = (titles, texts, categories, urls, sources, dates, vectors)
+        result = (titles, texts, categories, urls, sources, dates, np.array(vectors))
 
     return result
 
