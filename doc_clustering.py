@@ -150,7 +150,7 @@ class DocClustering:
         return predictions
 
     def clusterize_dbscan(self, vectors):
-        dbscan = DBSCAN()
+        dbscan = DBSCAN(min_samples=2, eps=0.01, leaf_size=10)
         predictions = dbscan.fit_predict(vectors)
         print('Fit predict ready')
 
